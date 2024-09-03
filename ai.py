@@ -9,21 +9,23 @@ load_dotenv()
 api_key = os.getenv('OPENAI_API_KEY')
 
 llm = ChatOpenAI(
-    temperature=0.0,  # 창의성 (0.0 ~ 2.0)
+    temperature=0.1,  # 창의성 (0.0 ~ 2.0)
     model_name="gpt-4o",  # 모델명
 )
 
-template = ( "Provide only the feedback and improved sentence in {language} in the following format, with no extra text or labels: [Your feedback here]--[Improved sentence here, if needed] Sentence: {sentence}"
+template = (
+    "Provide feedback in {language}, but do not translate the original sentence. Instead, improve the original sentence in the same language. "
+    "Format(without any labels): [Your feedback]--[Improved sentence only if needed]. "
+    "Original sentence: {sentence}"
 )
 prompt  = PromptTemplate.from_template(template)
 
 chain = prompt | llm
 
-def get_response(sentence, language):
+def get_ai_response(sentence, language):
     response = chain.invoke({
         "sentence": sentence,
         "language": language
-    })
+    }).content
+    
     return response
-
-print(get_response(sentence='hello world, do you hear me?', language='Korean').content)
