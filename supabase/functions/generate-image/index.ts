@@ -29,15 +29,12 @@ Deno.serve(async (req) => {
       style: "natural",
     });
 
-    return new Response(
-      JSON.stringify({ images }),
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*",
-        },
+    return new Response(JSON.stringify({ images }), {
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
       },
-    );
+    });
   } catch (error) {
     return new Response(
       JSON.stringify({ error: (error as Error)?.message || error }),
