@@ -19,7 +19,7 @@ Deno.serve(async (req) => {
       throw new Error("Content is required");
     }
 
-    const images = await openai.images.generate({
+    const imageUrls = await openai.images.generate({
       model: "dall-e-3",
       prompt: content +
         ", cute simple drawing style, pastel colors, children's book illustration",
@@ -29,13 +29,14 @@ Deno.serve(async (req) => {
       style: "natural",
     });
 
-    return new Response(JSON.stringify({ images }), {
+    return new Response(JSON.stringify({ imageUrl: imageUrls.data[0].url }), {
       headers: {
         "Content-Type": "application/json",
         "Access-Control-Allow-Origin": "*",
       },
     });
   } catch (error) {
+    console.log(error);
     return new Response(
       JSON.stringify({ error: (error as Error)?.message || error }),
       {
