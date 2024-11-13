@@ -6,6 +6,13 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
 import OpenAI from "npm:openai";
+import Sharp from "npm:@img/sharp-linux-x64";
+import { createClient, SupabaseClient } from "npm:@supabase/supabase-js";
+
+const supabaseClient: SupabaseClient = createClient(
+  Deno.env.get("V_SUPABASE_URL")!,
+  Deno.env.get("V_SUPABASE_SERVICE_ROLE_KEY")!,
+);
 
 Deno.serve(async (req) => {
   try {
@@ -28,6 +35,23 @@ Deno.serve(async (req) => {
       quality: "standard",
       style: "natural",
     });
+
+    const imageUrl = imageUrls.data[0].url!;
+    const imageResponse = await fetch(imageUrl);
+    const imageBuffer = await imageResponse.arrayBuffer();
+
+    const resizedImageBuffer = await Sharp(imageBuffer)
+      .resize(512, 512)
+      .toBuffer();
+
+    const { data, error } = await supabaseClient.storage
+      .from("diary-images")
+      .upload(`${Date.now()}.png`, resizedImageBuffer, {
+        contentType: "image/png",
+        upsert: false,
+      });
+    console.log(data);
+    if (error) throw error;
 
     return new Response(JSON.stringify({ imageUrl: imageUrls.data[0].url }), {
       headers: {
