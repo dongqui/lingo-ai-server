@@ -38,20 +38,33 @@ Deno.serve(async (req) => {
 
     const imageUrl = imageUrls.data[0].url!;
     const imageResponse = await fetch(imageUrl);
-    const imageBuffer = await imageResponse.arrayBuffer();
+    // const imageBuffer = await imageResponse.arrayBuffer();
 
-    const resizedImageBuffer = await Sharp(imageBuffer)
-      .resize(512, 512)
-      .toBuffer();
+    // const resizedImageBuffer = await Sharp(imageBuffer)
+    //   .resize(512, 512)
+    //   .toBuffer();
 
     const { data, error } = await supabaseClient.storage
-      .from("diary-images")
-      .upload(`${Date.now()}.png`, resizedImageBuffer, {
+      .from("vivid")
+      .upload(`${Date.now()}.png`, await imageResponse.arrayBuffer(), {
         contentType: "image/png",
         upsert: false,
       });
+
     console.log(data);
     if (error) throw error;
+
+    const url = await supabaseClient.storage.from("vivid").download(
+      data.fullPath,
+      {
+        transform: {
+          width: 512,
+          height: 512,
+        },
+      },
+    );
+    console.log(typeof url);
+    console.log(url);
 
     return new Response(JSON.stringify({ imageUrl: imageUrls.data[0].url }), {
       headers: {
@@ -60,7 +73,6 @@ Deno.serve(async (req) => {
       },
     });
   } catch (error) {
-    console.log(error);
     return new Response(
       JSON.stringify({ error: (error as Error)?.message || error }),
       {
