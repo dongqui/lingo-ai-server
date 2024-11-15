@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
         upsert: false,
       });
 
-    console.log(data);
+
     if (error) throw error;
 
     const url = await supabaseClient.storage.from("vivid").download(
@@ -63,8 +63,6 @@ Deno.serve(async (req) => {
         },
       },
     );
-    console.log(typeof url);
-    console.log(url);
 
     return new Response(JSON.stringify({ imageUrl: imageUrls.data[0].url }), {
       headers: {
