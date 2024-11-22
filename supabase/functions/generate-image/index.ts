@@ -6,7 +6,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
 import OpenAI from "npm:openai";
-import Sharp from "npm:@img/sharp-linux-x64";
+
 import { createClient, SupabaseClient } from "npm:@supabase/supabase-js";
 
 const supabaseClient: SupabaseClient = createClient(
@@ -20,57 +20,46 @@ Deno.serve(async (req) => {
       apiKey: Deno.env.get("OPENAI_API_KEY"),
     });
 
-    const { content } = await req.json();
-
-    if (!content) {
-      throw new Error("Content is required");
-    }
+    const { title, userId, content } = await req.json();
 
     const imageUrls = await openai.images.generate({
       model: "dall-e-3",
-      prompt: content +
-        ", cute simple drawing style, pastel colors, children's book illustration",
+      prompt:
+        `A children's illustrated diary page with a cute, simple drawing style, as if drawn by a child. The title is ${title} and the content is ${content}`,
       n: 1,
       size: "1024x1024",
       quality: "standard",
       style: "natural",
     });
 
-    const imageUrl = imageUrls.data[0].url!;
-    const imageResponse = await fetch(imageUrl);
-    // const imageBuffer = await imageResponse.arrayBuffer();
-
-    // const resizedImageBuffer = await Sharp(imageBuffer)
-    //   .resize(512, 512)
-    //   .toBuffer();
+    const imageResponse = await fetch(imageUrls.data[0].url!);
 
     const { data, error } = await supabaseClient.storage
       .from("vivid")
-      .upload(`${Date.now()}.png`, await imageResponse.arrayBuffer(), {
-        contentType: "image/png",
-        upsert: false,
-      });
-
+      .upload(
+        `${userId}/${Date.now()}.png`,
+        await imageResponse.arrayBuffer(),
+        {
+          contentType: "image/png",
+          upsert: false,
+        },
+      );
 
     if (error) throw error;
 
-    const url = await supabaseClient.storage.from("vivid").download(
-      data.fullPath,
-      {
-        transform: {
-          width: 512,
-          height: 512,
-        },
-      },
-    );
+    const { data: { publicUrl } } = supabaseClient.storage.from("vivid")
+      .getPublicUrl(
+        data.path,
+      );
 
-    return new Response(JSON.stringify({ imageUrl: imageUrls.data[0].url }), {
+    return new Response(JSON.stringify({ imageUrl: publicUrl }), {
       headers: {
         "Content-Type": "application/json",
         "Access-Control-Allow-Origin": "*",
       },
     });
   } catch (error) {
+    console.log(error);
     return new Response(
       JSON.stringify({ error: (error as Error)?.message || error }),
       {
@@ -80,15 +69,3 @@ Deno.serve(async (req) => {
     );
   }
 });
-
-/* To invoke locally:
-
-  1. Run `supabase start` (see: https://supabase.com/docs/reference/cli/supabase-start)
-  2. Make an HTTP request:
-
-  curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/generate-diary-image' \
-    --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0' \
-    --header 'Content-Type: application/json' \
-    --data '{"name":"Functions"}'
-
-*/
