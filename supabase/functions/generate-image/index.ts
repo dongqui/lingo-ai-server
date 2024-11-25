@@ -7,12 +7,12 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
 import OpenAI from "npm:openai";
 
-import { createClient, SupabaseClient } from "npm:@supabase/supabase-js";
+// import { createClient, SupabaseClient } from "npm:@supabase/supabase-js";
 
-const supabaseClient: SupabaseClient = createClient(
-  Deno.env.get("V_SUPABASE_URL")!,
-  Deno.env.get("V_SUPABASE_SERVICE_ROLE_KEY")!,
-);
+// const supabaseClient: SupabaseClient = createClient(
+//   Deno.env.get("V_SUPABASE_URL")!,
+//   Deno.env.get("V_SUPABASE_SERVICE_ROLE_KEY")!,
+// );
 
 Deno.serve(async (req) => {
   try {
@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
       apiKey: Deno.env.get("OPENAI_API_KEY"),
     });
 
-    const { title, userId, content } = await req.json();
+    const { title, content } = await req.json();
 
     const imageUrls = await openai.images.generate({
       model: "dall-e-3",
@@ -32,27 +32,27 @@ Deno.serve(async (req) => {
       style: "natural",
     });
 
-    const imageResponse = await fetch(imageUrls.data[0].url!);
+    // const imageResponse = await fetch(imageUrls.data[0].url!);
 
-    const { data, error } = await supabaseClient.storage
-      .from("vivid")
-      .upload(
-        `${userId}/${Date.now()}.png`,
-        await imageResponse.arrayBuffer(),
-        {
-          contentType: "image/png",
-          upsert: false,
-        },
-      );
+    // const { data, error } = await supabaseClient.storage
+    //   .from("vivid")
+    //   .upload(
+    //     `${userId}/${Date.now()}.png`,
+    //     await imageResponse.arrayBuffer(),
+    //     {
+    //       contentType: "image/png",
+    //       upsert: false,
+    //     },
+    //   );
 
-    if (error) throw error;
+    // if (error) throw error;
 
-    const { data: { publicUrl } } = supabaseClient.storage.from("vivid")
-      .getPublicUrl(
-        data.path,
-      );
-
-    return new Response(JSON.stringify({ imageUrl: publicUrl }), {
+    // const { data: { publicUrl } } = supabaseClient.storage.from("vivid")
+    //   .getPublicUrl(
+    //     data.path,
+    //   );
+    console.log(imageUrls.data[0].url);
+    return new Response(JSON.stringify({ imageUrl: imageUrls.data[0].url! }), {
       headers: {
         "Content-Type": "application/json",
         "Access-Control-Allow-Origin": "*",
