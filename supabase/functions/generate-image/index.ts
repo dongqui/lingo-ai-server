@@ -20,12 +20,17 @@ Deno.serve(async (req) => {
       apiKey: Deno.env.get("OPENAI_API_KEY"),
     });
 
-    const { title, content } = await req.json();
+    const { content, extraPromtp } = await req.json();
 
     const imageUrls = await openai.images.generate({
       model: "dall-e-3",
-      prompt:
-        `A children's illustrated diary page with a cute, simple drawing style, as if drawn by a child. The title is ${title} and the content is ${content}`,
+      prompt: `
+      Do not include any text or captions in the illustration.
+      The illustration should be drawn in a child's hand-drawn style. If this conflicts with the priority references below, follow the priority references.
+      
+      references:  ${content}
+      priority references:  ${extraPromtp}
+      `,
       n: 1,
       size: "1024x1024",
       quality: "standard",
